@@ -1,0 +1,20 @@
+{
+  "name": "dll-webhub",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "engines": { "node": ">=22" },
+  "scripts": {
+    "build": "node scripts/build.js",
+    "dev": "npm run build && node scripts/serve.js",
+    "preview": "node scripts/serve.js",
+    "lint": "node --check src/app.js && node --check src/diagrams.js && node --check scripts/build.js && node --check scripts/serve.js",
+    "test": "npm run build && playwright test"
+  },
+  "devDependencies": {
+    "@fontsource/montserrat": "5.2.8",
+    "@fontsource/open-sans": "5.2.7",
+    "@playwright/test": "1.58.2",
+    "axe-core": "4.11.1"
+  }
+}

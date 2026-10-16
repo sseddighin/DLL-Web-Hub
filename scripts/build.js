@@ -43,6 +43,10 @@ await writeFile(
 for (const name of ["styles.css", "app.js", "diagrams.js", "assets"]) {
   await cp(path.join(src, name), path.join(out, name), { recursive: true });
 }
+await cp(
+  path.join(root, "Computing and AI for ALL.jpg"),
+  path.join(out, "assets/Computing and AI for ALL.jpg"),
+);
 await writeFile(
   path.join(out, "content.js"),
   `// Generated from src/content/pages.json.\nexport const pages = ${JSON.stringify(pages)};\n`,

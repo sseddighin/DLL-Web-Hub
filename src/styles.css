@@ -1292,6 +1292,10 @@ h1:focus {
 .brand-home strong {
   font: 700 20px Montserrat;
 }
+.brand-title {
+  color: inherit;
+  text-decoration: none;
+}
 .brand-home small {
   display: block;
   color: #255799;

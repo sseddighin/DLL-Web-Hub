@@ -10,6 +10,68 @@ const guides = pages.filter((p) => !p.landing);
 const problems = (p) => /^MANAGE-0[5-9]$|^MANAGE-10$/.test(p.id);
 const route = (p, view = "do") => `/#/${p.slug}?view=${view}`;
 
+test("GitHub Pages project path serves application assets and keeps navigation under the repository", async ({
+  page,
+  request,
+}) => {
+  const prefix = "/DLL-Web-Hub/";
+  const assets = [];
+  const failures = [];
+  page.on("request", (r) => {
+    if (["script", "stylesheet", "font", "image"].includes(r.resourceType()))
+      assets.push(new URL(r.url()).pathname);
+  });
+  page.on("response", (r) => {
+    if (r.status() >= 400) failures.push(`${r.status()} ${r.url()}`);
+  });
+  await page.goto(`${prefix}#/how-dll-websites-work?view=understand`);
+  await expect(page.locator("h1")).toHaveText("How DLL websites work");
+  await expect(page.locator("base")).toHaveAttribute("href", prefix);
+  await openDetails(page);
+  await page.locator("img").evaluateAll(async (imgs) => {
+    await Promise.all(
+      imgs.map(async (img) => {
+        img.loading = "eager";
+        await img.decode();
+      }),
+    );
+  });
+  await page.evaluate(() => document.fonts.ready);
+  expect(assets.length).toBeGreaterThan(5);
+  expect(assets.every((p) => p.startsWith(prefix))).toBe(true);
+  expect(failures).toEqual([]);
+  await page
+    .getByRole("link", { name: "Build Your Website", exact: true })
+    .first()
+    .click();
+  await page.getByRole("link", { name: /Start Exploring/ }).click();
+  await expect(page).toHaveURL(/\/DLL-Web-Hub\/#\/start-exploring/);
+  await page.reload();
+  await expect(
+    page.getByLabel("Who is this for?", { exact: true }),
+  ).toBeVisible();
+  await page.goBack();
+  await expect(page.locator("h1")).toHaveText("Build Your Website");
+  for (const resource of [
+    "app.js",
+    "styles.css",
+    "content.js",
+    "diagrams.js",
+    "assets/tool-workflow.png",
+    "assets/fonts/montserrat-latin-700-normal.woff2",
+  ]) {
+    expect((await request.get(prefix + resource)).status(), resource).toBe(200);
+  }
+  for (const resource of [
+    "README.md",
+    "docs/coverage-check.md",
+    ".git/config",
+    "src/index.html",
+  ]) {
+    expect((await request.get(prefix + resource)).status(), resource).toBe(404);
+  }
+});
+
 async function openDetails(page) {
   await page.locator("details").evaluateAll((nodes) =>
     nodes.forEach((n) => {

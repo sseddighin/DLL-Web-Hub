@@ -1,6 +1,7 @@
 import { cp, mkdir, readFile, writeFile, rm } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
+import { basePath } from "./site-config.js";
 
 const root = fileURLToPath(new URL("../", import.meta.url));
 const src = path.join(root, "src");
@@ -33,14 +34,13 @@ for (const page of pages) {
 }
 await rm(out, { recursive: true, force: true });
 await mkdir(out, { recursive: true });
+const html = await readFile(path.join(src, "index.html"), "utf8");
+await writeFile(
+  path.join(out, "index.html"),
+  html.replace("<!-- SITE_BASE -->", `<base href="${basePath}">`),
+);
 // Explicit public allowlist: maintainer docs and source references never enter dist.
-for (const name of [
-  "index.html",
-  "styles.css",
-  "app.js",
-  "diagrams.js",
-  "assets",
-]) {
+for (const name of ["styles.css", "app.js", "diagrams.js", "assets"]) {
   await cp(path.join(src, name), path.join(out, name), { recursive: true });
 }
 await writeFile(
@@ -65,5 +65,5 @@ for (const [family, weights] of [
   );
 }
 console.log(
-  `Built ${pages.filter((p) => !p.landing).length} guides and 4 section overviews in dist/. No deployment performed.`,
+  `Built ${pages.filter((p) => !p.landing).length} guides and 4 section overviews in dist/ for ${basePath}. No deployment performed.`,
 );

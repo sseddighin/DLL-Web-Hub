@@ -5,6 +5,9 @@ import { fileURLToPath } from "node:url";
 
 const root = fileURLToPath(new URL("../dist/", import.meta.url));
 const port = Number(process.env.PORT || 4173);
+// Serve exactly the base path recorded in the built artifact, including overrides.
+const html = await readFile(path.join(root, "index.html"), "utf8");
+const basePath = html.match(/<base href="([^"]+)">/)?.[1] || "/";
 const types = {
   ".html": "text/html; charset=utf-8",
   ".js": "text/javascript; charset=utf-8",
@@ -17,10 +20,17 @@ createServer(async (req, res) => {
   try {
     const url = new URL(req.url, "http://localhost");
     const requested = decodeURIComponent(url.pathname);
-    const file = path.resolve(
-      root,
-      "." + (requested === "/" ? "/index.html" : requested),
-    );
+    if (
+      basePath !== "/" &&
+      (requested === "/" || requested === basePath.slice(0, -1))
+    ) {
+      res.writeHead(302, { Location: basePath + url.search });
+      res.end();
+      return;
+    }
+    if (!requested.startsWith(basePath)) throw new Error("Not found");
+    const relative = requested.slice(basePath.length);
+    const file = path.resolve(root, relative || "index.html");
     if (!file.startsWith(root) || !(await stat(file)).isFile())
       throw new Error("Not found");
     res.writeHead(200, {
@@ -34,5 +44,7 @@ createServer(async (req, res) => {
     res.end("Not found");
   }
 }).listen(port, "127.0.0.1", () =>
-  console.log(`Local-only WebHub preview listening on port ${port}`),
+  console.log(
+    `Local-only WebHub preview listening on port ${port} at ${basePath}`,
+  ),
 );
